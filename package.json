@@ -1,0 +1,33 @@
+{
+  "name": "mmm-earthquakemonitorjp",
+  "version": "1.0.0",
+  "description": "MagicMirror module for real-time earthquake monitoring in Japan using P2P Quake API",
+  "main": "node_helper.js",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ryuto-dev/MMM-EarthquakeAlerts_forJapan.git"
+  },
+  "keywords": [
+    "MagicMirror",
+    "module",
+    "earthquake",
+    "japan",
+    "p2pquake",
+    "seismic",
+    "alert"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Ryuto-dev/MMM-EarthquakeAlerts_forJapan/issues"
+  },
+  "homepage": "https://github.com/Ryuto-dev/MMM-EarthquakeAlerts_forJapan#readme",
+  "dependencies": {
+    "reconnecting-websocket": "^4.4.0",
+    "ws": "^8.18.0"
+  }
+}
