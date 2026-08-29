@@ -1,0 +1,192 @@
+/* MMM-EarthquakeMonitorJP Styles */
+
+.earthquake-monitor-jp {
+  font-family: "Noto Sans JP", "Roboto", sans-serif;
+  text-align: left;
+  line-height: 1.5;
+  max-width: 450px;
+}
+
+/* ─── Loading ─────────────────────────────────────────────────── */
+.eq-loading {
+  padding: 5px 0;
+  animation: eq-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes eq-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ─── EEW (Emergency Earthquake Warning) ──────────────────────── */
+.eq-eew {
+  background: rgba(200, 0, 0, 0.25);
+  border-left: 4px solid #ff0000;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.eq-eew-header {
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #ff4444;
+}
+
+.eq-eew-icon {
+  font-size: 1.2em;
+  margin-right: 4px;
+}
+
+.eq-eew-info {
+  margin-top: 4px;
+}
+
+.eq-eew-location {
+  font-size: 1.0em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.eq-eew-magnitude {
+  font-size: 0.95em;
+  color: #ffcc00;
+  margin-left: 8px;
+}
+
+.eq-eew-areas {
+  margin-top: 4px;
+  color: #ffaaaa;
+  line-height: 1.4;
+}
+
+.eq-eew-cancelled {
+  color: #aaaaaa;
+  font-style: italic;
+  margin-top: 4px;
+}
+
+/* Blink animation for EEW */
+.eq-blink {
+  animation: eq-blink-anim 1s ease-in-out infinite;
+}
+
+@keyframes eq-blink-anim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Tsunami ─────────────────────────────────────────────────── */
+.eq-tsunami {
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.eq-tsunami-majorwarning {
+  background: rgba(160, 0, 160, 0.3);
+  border-left: 4px solid #cc00cc;
+}
+
+.eq-tsunami-warning {
+  background: rgba(200, 0, 0, 0.2);
+  border-left: 4px solid #ff3333;
+}
+
+.eq-tsunami-watch {
+  background: rgba(200, 200, 0, 0.15);
+  border-left: 4px solid #ffcc00;
+}
+
+.eq-tsunami-header {
+  font-size: 1.0em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.eq-tsunami-icon {
+  margin-right: 4px;
+}
+
+.eq-tsunami-areas {
+  margin-top: 4px;
+  line-height: 1.6;
+}
+
+.eq-tsunami-area {
+  color: #dddddd;
+}
+
+/* ─── Earthquake Information ──────────────────────────────────── */
+.eq-quake {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.eq-quake:last-child {
+  border-bottom: none;
+}
+
+.eq-quake-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Seismic Intensity Badge ─────────────────────────────────── */
+.eq-scale-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  font-weight: bold;
+  color: #ffffff;
+  background: #555555;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* JMA-style intensity colors */
+.eq-scale-10 { background: #6e7781; color: #ffffff; }        /* 震度1: gray */
+.eq-scale-20 { background: #2266cc; color: #ffffff; }        /* 震度2: blue */
+.eq-scale-30 { background: #22aa55; color: #ffffff; }        /* 震度3: green */
+.eq-scale-40 { background: #ddaa00; color: #1a1a1a; }        /* 震度4: yellow-orange */
+.eq-scale-45 { background: #ee7700; color: #ffffff; }        /* 震度5弱: orange */
+.eq-scale-46 { background: #ee7700; color: #ffffff; }        /* 震度5弱以上: orange */
+.eq-scale-50 { background: #ee7700; color: #ffffff; }        /* 震度5強: orange */
+.eq-scale-55 { background: #dd2200; color: #ffffff; }        /* 震度6弱: red */
+.eq-scale-60 { background: #dd2200; color: #ffffff; }        /* 震度6強: red */
+.eq-scale-70 { background: #990088; color: #ffffff; }        /* 震度7: purple */
+
+.eq-quake-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.eq-quake-location {
+  font-size: 0.95em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.eq-quake-details {
+  font-size: 0.8em;
+  margin-top: 2px;
+}
+
+/* ─── Point Details ───────────────────────────────────────────── */
+.eq-quake-points {
+  margin-top: 4px;
+  padding-left: 46px;
+  line-height: 1.5;
+}
+
+/* ─── Comment ─────────────────────────────────────────────────── */
+.eq-quake-comment {
+  margin-top: 2px;
+  padding-left: 46px;
+  font-style: italic;
+}
