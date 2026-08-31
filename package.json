@@ -5,7 +5,9 @@
   "main": "node_helper.js",
   "scripts": {
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "preview": "node preview/server.js",
+    "verify": "node preview/verify.js"
   },
   "repository": {
     "type": "git",

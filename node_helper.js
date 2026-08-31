@@ -21,6 +21,7 @@ module.exports = NodeHelper.create({
     this.ws = null;
     this.restTimer = null;
     this.seenIds = new Set();
+    this.initialFetchDone = false;
   },
 
   stop() {
@@ -141,15 +142,18 @@ module.exports = NodeHelper.create({
         return;
       }
       this.seenIds.add(data.id);
-
-      // Prevent memory leak by capping seen IDs
-      if (this.seenIds.size > 1000) {
-        const arr = Array.from(this.seenIds);
-        this.seenIds = new Set(arr.slice(arr.length - 500));
-      }
+      this._pruneSeenIds();
     }
 
     this._dispatchData(data);
+  },
+
+  // Prevent memory leak by capping seen IDs
+  _pruneSeenIds() {
+    if (this.seenIds.size > 1000) {
+      const arr = Array.from(this.seenIds);
+      this.seenIds = new Set(arr.slice(arr.length - 500));
+    }
   },
 
   // ─── REST API Fetch ──────────────────────────────────────────────
@@ -181,13 +185,30 @@ module.exports = NodeHelper.create({
         return;
       }
 
-      // Register seen IDs
-      items.forEach((item) => {
-        if (item.id) this.seenIds.add(item.id);
-      });
+      if (!this.initialFetchDone) {
+        // First fetch: hand over the whole backlog so list mode can populate.
+        // Notification mode decides on its own whether to alert for it.
+        items.forEach((item) => {
+          if (item.id) this.seenIds.add(item.id);
+        });
+        this.initialFetchDone = true;
+        this.sendSocketNotification("INITIAL_DATA", items);
+      } else {
+        // Subsequent polls: only forward genuinely new events, oldest first,
+        // as individual realtime events. This keeps notification mode from
+        // re-alerting for the same earthquake on every poll.
+        const fresh = items.filter((item) => !item.id || !this.seenIds.has(item.id));
+        fresh.reverse();
+        fresh.forEach((item) => {
+          if (item.id) this.seenIds.add(item.id);
+          Log.info(
+            "[MMM-EarthquakeMonitorJP] New event via REST poll (code " + item.code + ")"
+          );
+          this._dispatchData(item);
+        });
+        this._pruneSeenIds();
+      }
 
-      // Send initial bulk data
-      this.sendSocketNotification("INITIAL_DATA", items);
       this.sendSocketNotification("CONNECTION_STATUS", {
         status: "connected",
       });
