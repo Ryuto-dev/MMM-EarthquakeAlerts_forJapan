@@ -190,3 +190,480 @@
   padding-left: 46px;
   font-style: italic;
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Notification mode (displayMode: "notification")
+   Transient, topbar-friendly alerts that disappear on their own.
+   ══════════════════════════════════════════════════════════════════ */
+
+.earthquake-monitor-jp.eq-notify-mode {
+  max-width: none;
+  line-height: 1.3;
+}
+
+/* Nothing to report → occupy zero space */
+.earthquake-monitor-jp.eq-notify-mode.eq-notify-empty {
+  display: none;
+}
+
+/* ─── Notification card ───────────────────────────────────────── */
+.eq-notify {
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  border-left: 4px solid #888888;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 12px;
+  margin-bottom: 6px;
+  animation: eq-notify-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.eq-notify:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes eq-notify-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.eq-notify-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Leading badge ───────────────────────────────────────────── */
+.eq-notify-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  font-size: 0.95em;
+  font-weight: bold;
+  color: #ffffff;
+  background: #555555;
+  padding: 0 5px;
+  flex-shrink: 0;
+}
+
+.eq-notify-badge-glyph {
+  background: transparent;
+  font-size: 1.5em;
+  min-width: 28px;
+}
+
+/* The .eq-scale-* colors are declared earlier in this file, so they would
+   lose to .eq-notify-badge on equal specificity. Re-apply them with a
+   higher-specificity selector so the intensity badge stays JMA-colored. */
+.eq-notify-badge.eq-scale-10 { background: #6e7781; color: #ffffff; }
+.eq-notify-badge.eq-scale-20 { background: #2266cc; color: #ffffff; }
+.eq-notify-badge.eq-scale-30 { background: #22aa55; color: #ffffff; }
+.eq-notify-badge.eq-scale-40 { background: #ddaa00; color: #1a1a1a; }
+.eq-notify-badge.eq-scale-45 { background: #ee7700; color: #ffffff; }
+.eq-notify-badge.eq-scale-46 { background: #ee7700; color: #ffffff; }
+.eq-notify-badge.eq-scale-50 { background: #ee7700; color: #ffffff; }
+.eq-notify-badge.eq-scale-55 { background: #dd2200; color: #ffffff; }
+.eq-notify-badge.eq-scale-60 { background: #dd2200; color: #ffffff; }
+.eq-notify-badge.eq-scale-70 { background: #990088; color: #ffffff; }
+
+/* ─── Text ────────────────────────────────────────────────────── */
+.eq-notify-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.eq-notify-title {
+  font-size: 1em;
+  font-weight: bold;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.eq-notify-detail {
+  font-size: 0.78em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Compact (single line) layout for top_bar ────────────────── */
+.eq-notify-compact .eq-notify {
+  padding: 4px 12px;
+}
+
+.eq-notify-compact .eq-notify-badge {
+  min-width: 28px;
+  height: 28px;
+  font-size: 0.85em;
+}
+
+.eq-notify-compact .eq-notify-badge-glyph {
+  font-size: 1.3em;
+}
+
+.eq-notify-compact .eq-notify-text {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.eq-notify-compact .eq-notify-title {
+  font-size: 0.95em;
+}
+
+/* ─── Severity styling ────────────────────────────────────────── */
+/* 1 = info, 2 = caution, 3 = warning */
+.eq-notify-sev-1 {
+  border-left-color: #4aa3ff;
+  background: rgba(40, 100, 180, 0.22);
+}
+
+.eq-notify-sev-2 {
+  border-left-color: #ffb300;
+  background: rgba(200, 140, 0, 0.24);
+}
+
+.eq-notify-sev-3 {
+  border-left-color: #ff2222;
+  background: rgba(200, 0, 0, 0.30);
+}
+
+.eq-notify-sev-3 .eq-notify-title {
+  color: #ff8f8f;
+}
+
+/* Cancellation notices are always muted */
+.eq-notify-eew-cancelled,
+.eq-notify-tsunami-cancelled {
+  border-left-color: #888888;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.eq-notify-eew-cancelled .eq-notify-title,
+.eq-notify-tsunami-cancelled .eq-notify-title {
+  color: #bbbbbb;
+  font-style: italic;
+}
+
+/* ─── Blink while the alert is fresh ──────────────────────────── */
+.eq-notify-blink {
+  animation:
+    eq-notify-in 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    eq-notify-blink-anim 1s ease-in-out infinite;
+}
+
+@keyframes eq-notify-blink-anim {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.18);
+  }
+}
+
+/* Stronger, red-tinted flash for warning-level alerts */
+.eq-notify-sev-3.eq-notify-blink {
+  animation:
+    eq-notify-in 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    eq-notify-blink-strong 0.8s ease-in-out infinite;
+}
+
+@keyframes eq-notify-blink-strong {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 rgba(255, 0, 0, 0);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 18px rgba(255, 40, 40, 0.55);
+  }
+}
+
+/* ─── Countdown bar ───────────────────────────────────────────── */
+.eq-notify-countdown {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.eq-notify-countdown-bar {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: width 1s linear;
+}
+
+.eq-notify-sev-3 .eq-notify-countdown-bar {
+  background: rgba(255, 90, 90, 0.85);
+}
+
+.eq-notify-sev-2 .eq-notify-countdown-bar {
+  background: rgba(255, 190, 60, 0.85);
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .eq-notify,
+  .eq-notify-blink,
+  .eq-notify-sev-3.eq-notify-blink {
+    animation: none;
+  }
+  .eq-notify-countdown-bar {
+    transition: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Fullscreen alert overlay (fullscreenAlert: true)
+   Appended to document.body so it covers the entire mirror.
+   ══════════════════════════════════════════════════════════════════ */
+
+.eq-fullscreen {
+  position: fixed;
+  inset: 0;
+  /* `inset` fallback for older Electron builds */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4vh 6vw;
+  box-sizing: border-box;
+  font-family: "Noto Sans JP", "Roboto Condensed", sans-serif;
+  text-align: center;
+  animation: eq-fullscreen-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Never swallow clicks/touches meant for the mirror underneath */
+  pointer-events: none;
+}
+
+.eq-fullscreen-dim {
+  background: rgba(0, 0, 0, 0.97);
+  backdrop-filter: blur(4px);
+}
+
+/* Scale DOWN toward 1 rather than up from >1: a fullscreen element scaled
+   above 1 would overflow the viewport and can flash scrollbars. */
+@keyframes eq-fullscreen-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.eq-fullscreen-inner {
+  max-width: 90%;
+}
+
+/* ─── Severity accents ────────────────────────────────────────── */
+.eq-fullscreen-sev-1 { box-shadow: inset 0 0 0 8px rgba(74, 163, 255, 0.85); }
+.eq-fullscreen-sev-2 { box-shadow: inset 0 0 0 8px rgba(255, 179, 0, 0.9); }
+.eq-fullscreen-sev-3 { box-shadow: inset 0 0 0 10px rgba(255, 34, 34, 0.95); }
+
+/* ─── Pulsing background ──────────────────────────────────────── */
+.eq-fullscreen-blink.eq-fullscreen-sev-3 {
+  animation:
+    eq-fullscreen-in 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    eq-fullscreen-pulse-danger 1.1s ease-in-out infinite;
+}
+
+.eq-fullscreen-blink.eq-fullscreen-sev-2 {
+  animation:
+    eq-fullscreen-in 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    eq-fullscreen-pulse-warn 1.4s ease-in-out infinite;
+}
+
+/* Nearly opaque on purpose: an emergency alert must not let the widgets
+   underneath (clock, calendar, ...) ghost through behind the headline. */
+@keyframes eq-fullscreen-pulse-danger {
+  0%, 100% { background-color: rgb(58, 0, 0); }
+  50%      { background-color: rgb(126, 0, 0); }
+}
+
+@keyframes eq-fullscreen-pulse-warn {
+  0%, 100% { background-color: rgb(48, 32, 0); }
+  50%      { background-color: rgb(104, 70, 0); }
+}
+
+/* ─── Glyph ───────────────────────────────────────────────────── */
+.eq-fullscreen-glyph {
+  font-size: 12vh;
+  line-height: 1;
+  margin-bottom: 2vh;
+}
+
+/* ─── Title ───────────────────────────────────────────────────── */
+.eq-fullscreen-title {
+  font-size: 7vh;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  word-break: break-word;
+}
+
+.eq-fullscreen-sev-3 .eq-fullscreen-title { color: #fff2f2; }
+
+/* ─── Giant intensity badge ───────────────────────────────────── */
+.eq-fullscreen-scale {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2vw;
+  margin: 3vh 0 1vh;
+}
+
+.eq-fullscreen-scale-label {
+  font-size: 3vh;
+  color: #cccccc;
+  letter-spacing: 0.14em;
+}
+
+.eq-fullscreen-scale-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16vh;
+  padding: 0 2vh;
+  height: 16vh;
+  border-radius: 1.5vh;
+  background: #555555;
+  color: #ffffff;
+  font-size: 10vh;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+}
+
+/* Re-apply the JMA intensity colors at higher specificity, since the
+   .eq-scale-* rules appear earlier in this file. */
+.eq-fullscreen-scale-value.eq-scale-10 { background: #6e7781; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-20 { background: #2266cc; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-30 { background: #22aa55; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-40 { background: #ddaa00; color: #1a1a1a; }
+.eq-fullscreen-scale-value.eq-scale-45 { background: #ee7700; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-46 { background: #ee7700; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-50 { background: #ee7700; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-55 { background: #dd2200; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-60 { background: #dd2200; color: #ffffff; }
+.eq-fullscreen-scale-value.eq-scale-70 { background: #990088; color: #ffffff; }
+
+/* ─── Detail + call to action ─────────────────────────────────── */
+.eq-fullscreen-detail {
+  font-size: 3.4vh;
+  color: #e2e6ee;
+  margin-top: 2vh;
+  line-height: 1.5;
+}
+
+.eq-fullscreen-action {
+  font-size: 4.2vh;
+  font-weight: 700;
+  margin-top: 4vh;
+  padding: 1.6vh 3vw;
+  display: inline-block;
+  border-radius: 1vh;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  letter-spacing: 0.04em;
+}
+
+.eq-fullscreen-sev-3 .eq-fullscreen-action {
+  background: rgba(255, 40, 40, 0.35);
+  animation: eq-fullscreen-action-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes eq-fullscreen-action-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+/* ─── Test-data marker ────────────────────────────────────────── */
+.eq-fullscreen-test {
+  margin-top: 4vh;
+  font-size: 2.4vh;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #1a1a1a;
+  background: #ffcc00;
+  display: inline-block;
+  padding: 0.8vh 2vw;
+  border-radius: 0.6vh;
+}
+
+/* ─── Countdown ───────────────────────────────────────────────── */
+.eq-fullscreen-countdown {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.eq-fullscreen-countdown-bar {
+  height: 100%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.eq-fullscreen-sev-3 .eq-fullscreen-countdown-bar {
+  background: rgba(255, 80, 80, 0.95);
+}
+
+@keyframes eq-fullscreen-countdown-anim {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+/* Landscape-tight screens: scale the type down a little */
+@media (max-height: 500px) {
+  .eq-fullscreen-glyph { font-size: 9vh; margin-bottom: 1vh; }
+  .eq-fullscreen-title { font-size: 6vh; }
+  .eq-fullscreen-scale-value { height: 12vh; min-width: 12vh; font-size: 7.5vh; }
+  .eq-fullscreen-action { font-size: 3.4vh; margin-top: 2vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq-fullscreen,
+  .eq-fullscreen-blink.eq-fullscreen-sev-2,
+  .eq-fullscreen-blink.eq-fullscreen-sev-3,
+  .eq-fullscreen-sev-3 .eq-fullscreen-action {
+    animation: none;
+  }
+  .eq-fullscreen-blink.eq-fullscreen-sev-3 { background-color: rgba(90, 0, 0, 0.93); }
+  .eq-fullscreen-blink.eq-fullscreen-sev-2 { background-color: rgba(80, 54, 0, 0.93); }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Test mode badge (testMode + testShowBadge)
+   ══════════════════════════════════════════════════════════════════ */
+
+.eq-test-badge {
+  display: inline-block;
+  background: #ffcc00;
+  color: #1a1a1a;
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 1px 7px;
+  border-radius: 3px;
+  margin-bottom: 5px;
+  animation: eq-pulse 2s ease-in-out infinite;
+}
+
+/* Keep the idle test badge from stretching the topbar */
+.eq-notify-idle-test {
+  line-height: 1;
+}

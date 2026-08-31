@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Preview browser self-check</title>
+<!-- The real module stylesheet, so computed styles are authentic -->
+<link rel="stylesheet" href="/MMM-EarthquakeMonitorJP.css">
+</head>
+<body>
+<h1>Loading…</h1>
+<pre id="out"></pre>
+
+<!-- Same load order as the real preview page -->
+<script src="/preview/harness-shim-only.js"></script>
+<script src="/preview/fixtures.js"></script>
+<script src="/MMM-EarthquakeMonitorJP.js"></script>
+<script>
+/* Drives the real module in a real browser (real CSS engine) and reports
+   whether the notification lifecycle behaves correctly. Results are printed
+   to the console so PlaywrightConsoleCapture can read them. */
+(async () => {
+  const out = [];
+  const log = (ok, label, extra) => {
+    out.push((ok ? "PASS" : "FAIL") + " :: " + label + (extra ? " :: " + extra : ""));
+    console.log((ok ? "✅ PASS" : "❌ FAIL") + " " + label + (extra ? " → " + extra : ""));
+  };
+
+  const mount = document.createElement("div");
+  document.body.appendChild(mount);
+
+  const inst = window.__shim.instantiate("MMM-EarthquakeMonitorJP", {
+    displayMode: "notification",
+    notificationDuration: 3,
+    notificationBlinkDuration: 1,
+    animationSpeed: 0,
+  }, mount);
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const wrapper = () => mount.firstElementChild;
+
+  // ── Idle: must render nothing and be display:none ──
+  let w = wrapper();
+  log(w.children.length === 0, "idle renders no children", "children=" + w.children.length);
+  log(getComputedStyle(w).display === "none",
+      "idle wrapper is display:none (zero footprint)",
+      "display=" + getComputedStyle(w).display);
+  log(w.getBoundingClientRect().height === 0, "idle occupies 0px height",
+      "h=" + w.getBoundingClientRect().height);
+
+  // ── Inject a live quake (via the module's own scenario runner) ──
+  inst.runTestScenario("quake4");
+  await sleep(60);
+
+  w = wrapper();
+  log(w.children.length === 1, "notification rendered", "children=" + w.children.length);
+  log(getComputedStyle(w).display !== "none", "wrapper now visible");
+  log(w.getBoundingClientRect().height > 10, "occupies visible height",
+      "h=" + Math.round(w.getBoundingClientRect().height));
+
+  const item = w.children[0];
+  const cs = getComputedStyle(item);
+  log(cs.animationName.includes("eq-notify"), "CSS animation active (blink/slide-in)",
+      cs.animationName);
+  log(parseFloat(cs.borderLeftWidth) >= 3, "severity accent border applied",
+      cs.borderLeftWidth + " " + cs.borderLeftColor);
+
+  const badge = item.querySelector(".eq-notify-badge");
+  log(!!badge && badge.textContent === "4", "intensity badge shows 4",
+      badge ? badge.textContent : "missing");
+  // 震度4 must resolve to the JMA yellow-orange (#ddaa00), not the default gray
+  const badgeBg = badge ? getComputedStyle(badge).backgroundColor : "-";
+  log(badgeBg === "rgb(221, 170, 0)",
+      "badge uses JMA 震度4 color (not default gray)", badgeBg);
+
+  const bar = item.querySelector(".eq-notify-countdown-bar");
+  log(!!bar, "countdown bar present");
+  const w0 = bar ? parseFloat(bar.style.width) : -1;
+
+  // ── Blink stops after notificationBlinkDuration ──
+  await sleep(1500);
+  const item2 = wrapper().children[0];
+  log(!!item2 && !item2.classList.contains("eq-notify-blink"),
+      "blink class removed after blinkDuration");
+  const bar2 = item2 && item2.querySelector(".eq-notify-countdown-bar");
+  const w1 = bar2 ? parseFloat(bar2.style.width) : -1;
+  log(w1 < w0, "countdown bar shrinking", w0 + "% → " + w1 + "%");
+
+  // ── Auto-expiry ──
+  await sleep(2000);
+  w = wrapper();
+  log(w.children.length === 0, "auto-expired, nothing rendered",
+      "children=" + w.children.length);
+  log(getComputedStyle(w).display === "none", "collapsed back to display:none",
+      "display=" + getComputedStyle(w).display);
+  log(w.getBoundingClientRect().height === 0, "back to 0px height",
+      "h=" + w.getBoundingClientRect().height);
+  log(!inst._notifTimer, "expiry ticker cleaned up");
+
+  // ── Stale event must be ignored ──
+  inst.runTestScenario("quakeStale");
+  await sleep(60);
+  log(wrapper().children.length === 0, "stale (30-min-old) event ignored",
+      "children=" + wrapper().children.length);
+
+  // ════════════════════════════════════════════════════════════════
+  // Fullscreen overlay (real CSS layout + computed styles)
+  // ════════════════════════════════════════════════════════════════
+  const fsMount = document.createElement("div");
+  document.body.appendChild(fsMount);
+
+  const fs = window.__shim.instantiate("MMM-EarthquakeMonitorJP", {
+    displayMode: "notification",
+    testMode: true,
+    testHotkeys: false,
+    testShowBadge: true,
+    fullscreenAlert: true,
+    fullscreenMinScale: 45,
+    fullscreenDuration: 3,
+    animationSpeed: 0,
+  }, fsMount);
+
+  const overlay = () => document.getElementById("eq-fullscreen-overlay");
+
+  // Below threshold → no overlay
+  fs.runTestScenario("quake4");
+  await sleep(60);
+  log(!overlay(), "震度4 does not open the overlay (below fullscreenMinScale)");
+
+  // Above threshold → overlay covers the viewport
+  fs.runTestScenario("quake7");
+  await sleep(120);
+  const ov = overlay();
+  log(!!ov, "震度7 opens the fullscreen overlay");
+
+  if (ov) {
+    const ocs = getComputedStyle(ov);
+    log(ocs.position === "fixed", "overlay is position:fixed", ocs.position);
+
+    // Measure the untransformed box: the intro animation is still
+    // interpolating scale(), which would skew getBoundingClientRect().
+    log(ov.offsetWidth === window.innerWidth &&
+        ov.offsetHeight === window.innerHeight,
+        "overlay covers the full viewport",
+        ov.offsetWidth + "x" + ov.offsetHeight +
+        " vs " + window.innerWidth + "x" + window.innerHeight);
+
+    // And it must never exceed the viewport at any point in the animation
+    const r = ov.getBoundingClientRect();
+    log(r.width <= window.innerWidth + 1 && r.height <= window.innerHeight + 1,
+        "overlay never overflows the viewport (no scrollbars)",
+        Math.round(r.width) + "x" + Math.round(r.height));
+    log(parseInt(ocs.zIndex, 10) >= 9999, "overlay z-index is on top", ocs.zIndex);
+    log(ocs.pointerEvents === "none",
+        "overlay does not block interaction", ocs.pointerEvents);
+    log(ocs.display === "flex" && ocs.alignItems === "center",
+        "overlay content is centered", ocs.display + "/" + ocs.alignItems);
+
+    // Severity styling
+    log(ov.classList.contains("eq-fullscreen-sev-3"), "severity-3 styling applied");
+    log(ocs.animationName.includes("eq-fullscreen"),
+        "overlay animation running", ocs.animationName);
+
+    // Giant intensity badge, correctly coloured
+    const val = ov.querySelector(".eq-fullscreen-scale-value");
+    log(!!val && val.textContent === "7", "giant intensity badge shows 7",
+        val ? val.textContent : "missing");
+    const valBg = val ? getComputedStyle(val).backgroundColor : "-";
+    log(valBg === "rgb(153, 0, 136)",
+        "震度7 badge uses JMA purple", valBg);
+    const valSize = val ? parseFloat(getComputedStyle(val).fontSize) : 0;
+    log(valSize > 40, "intensity badge is large", Math.round(valSize) + "px");
+
+    // Title legibility
+    const t = ov.querySelector(".eq-fullscreen-title");
+    const tSize = t ? parseFloat(getComputedStyle(t).fontSize) : 0;
+    log(tSize > 30, "title is large enough to read across a room",
+        Math.round(tSize) + "px");
+    log(!!t && t.textContent.includes("宮城県沖"), "title names the hypocenter",
+        t ? t.textContent : "");
+
+    // Safety instruction + test marker
+    const act = ov.querySelector(".eq-fullscreen-action");
+    log(!!act && act.textContent.includes("身の安全"),
+        "safety instruction shown", act ? act.textContent : "missing");
+    const tag = ov.querySelector(".eq-fullscreen-test");
+    log(!!tag, "TEST DATA marker present on synthetic data");
+
+    // Countdown
+    const fsBar = ov.querySelector(".eq-fullscreen-countdown-bar");
+    log(!!fsBar && getComputedStyle(fsBar).animationName ===
+        "eq-fullscreen-countdown-anim", "overlay countdown animating",
+        fsBar ? getComputedStyle(fsBar).animationName : "missing");
+
+    // No text overflow off-screen
+    const inner = ov.querySelector(".eq-fullscreen-inner");
+    const ir = inner.getBoundingClientRect();
+    log(ir.left >= -1 && ir.right <= window.innerWidth + 1,
+        "overlay content stays inside the viewport",
+        Math.round(ir.left) + "→" + Math.round(ir.right));
+  }
+
+  // TEST MODE badge visible in the module itself
+  const testBadge = fsMount.querySelector(".eq-test-badge");
+  log(!!testBadge, "TEST MODE badge rendered");
+
+  // Auto-dismiss
+  await sleep(3200);
+  log(!overlay(), "overlay auto-dismissed after fullscreenDuration");
+
+  // Notification bus round-trip
+  fs.sendNotification("EARTHQUAKE_TEST", "quake7");
+  await sleep(120);
+  log(!!overlay(), "EARTHQUAKE_TEST via notification bus opens the overlay");
+  fs.sendNotification("EARTHQUAKE_DISMISS_FULLSCREEN");
+  await sleep(60);
+  log(!overlay(), "EARTHQUAKE_DISMISS_FULLSCREEN closes the overlay");
+
+  const fails = out.filter((l) => l.startsWith("FAIL"));
+  console.log("SUMMARY total=" + out.length + " failed=" + fails.length);
+  document.querySelector("h1").textContent =
+    fails.length === 0 ? "ALL PASSED (" + out.length + ")" : fails.length + " FAILED";
+  document.getElementById("out").textContent = out.join("\n");
+})();
+</script>
+</body>
+</html>

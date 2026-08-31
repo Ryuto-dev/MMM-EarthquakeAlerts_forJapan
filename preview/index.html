@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMM-EarthquakeMonitorJP — 通知モード プレビュー</title>
+<link rel="stylesheet" href="/preview/harness.css">
+<!-- The REAL module stylesheet under test -->
+<link rel="stylesheet" href="/MMM-EarthquakeMonitorJP.css">
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ══════════ Mirror simulation ══════════ -->
+  <main class="stage-col">
+    <h1>MMM-EarthquakeMonitorJP <span class="tag">通知モード プレビュー</span></h1>
+    <p class="lead">
+      実際の <code>MMM-EarthquakeMonitorJP.js</code> / <code>.css</code> を
+      MagicMirror シム上で読み込んでいます。左のシナリオを押すと地震イベントが注入され、
+      Topbar に通知が点滅表示 → 指定時間後に自動で消える動作を確認できます。
+    </p>
+
+    <div class="mirror" id="mirror">
+      <div class="mirror-label">MagicMirror (シミュレーション)</div>
+
+      <!-- top_bar region — where the module is mounted -->
+      <div class="region region-top-bar">
+        <div class="region-label">region: top_bar</div>
+        <div class="module-mount" id="module-mount"></div>
+      </div>
+
+      <!-- Decorative content so "no notification = nothing shown" is obvious -->
+      <div class="region region-top-center">
+        <div class="mirror-clock" id="mirror-clock">--:--</div>
+        <div class="mirror-date" id="mirror-date"></div>
+      </div>
+
+      <div class="region region-middle">
+        <div class="mirror-compliments">通知がないときは、この領域に何も表示されません。</div>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>状態インスペクタ</h2>
+      <div id="state"></div>
+    </section>
+
+    <section class="panel">
+      <h2>ログ</h2>
+      <div id="log" class="log"></div>
+    </section>
+  </main>
+
+  <!-- ══════════ Controls ══════════ -->
+  <aside class="side-col">
+
+    <section class="panel" id="controls">
+      <h2>表示モード</h2>
+      <label class="radio">
+        <input type="radio" name="displayMode" value="notification" checked>
+        <span><b>notification</b> — 通知だけ（新規追加）</span>
+      </label>
+      <label class="radio">
+        <input type="radio" name="displayMode" value="list">
+        <span><b>list</b> — 全情報を一覧表示（従来動作）</span>
+      </label>
+
+      <h2>通知モード設定</h2>
+
+      <label class="field">
+        <span>表示時間 <b id="notificationDuration-label"></b></span>
+        <input type="range" id="notificationDuration"
+               min="5" max="600" step="5" value="300">
+        <small>この時間が経過すると通知は自動的に消えます（既定 300秒 = 5分）</small>
+      </label>
+
+      <label class="field">
+        <span>点滅時間（秒）</span>
+        <input type="number" id="notificationBlinkDuration"
+               min="0" max="600" step="5" value="30">
+        <small>0 = 表示中ずっと点滅</small>
+      </label>
+
+      <label class="field">
+        <span>同時表示件数</span>
+        <input type="number" id="notificationMaxItems" min="1" max="5" value="1">
+      </label>
+
+      <label class="field">
+        <span>通知する最小震度 (minScale)</span>
+        <input type="number" id="notificationMinScale"
+               min="-1" max="70" step="5" value="-1">
+        <small>-1=すべて / 30=震度3 / 40=震度4 / 45=震度5弱</small>
+      </label>
+
+      <label class="field">
+        <span>鮮度しきい値（秒）</span>
+        <input type="number" id="notificationFreshness"
+               min="0" max="86400" step="60" value="600">
+        <small>これより古い地震は通知しません（0 = 無効）</small>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="notificationBlink" checked>
+        <span>点滅アニメーション</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="notificationCompact" checked>
+        <span>コンパクト表示（Topbar 向け1行）</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="notificationShowCountdown" checked>
+        <span>残り時間のカウントダウンバー</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="notifyOnInitialLoad">
+        <span>起動時の過去データも通知する</span>
+      </label>
+
+      <h2>全画面通知（alert 風）</h2>
+      <label class="check">
+        <input type="checkbox" id="fullscreenAlert" checked>
+        <span><b>fullscreenAlert</b> — 大きな地震で全画面表示</span>
+      </label>
+
+      <label class="field">
+        <span>全画面にする最小震度</span>
+        <input type="number" id="fullscreenMinScale"
+               min="-1" max="70" step="5" value="45">
+        <small>45=震度5弱 / 50=震度5強 / 55=震度6弱</small>
+      </label>
+
+      <label class="field">
+        <span>全画面の表示時間（秒）</span>
+        <input type="number" id="fullscreenDuration"
+               min="0" max="300" step="5" value="15">
+        <small>0 = 通知の表示時間に追従</small>
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="fullscreenBlink" checked>
+        <span>背景を点滅させる</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="fullscreenDimBackground" checked>
+        <span>背景を暗くする</span>
+      </label>
+
+      <h2>テストモード</h2>
+      <label class="check">
+        <input type="checkbox" id="testMode" checked>
+        <span><b>testMode</b> — テスト機能を有効化</span>
+      </label>
+      <label class="check">
+        <input type="checkbox" id="testShowBadge" checked>
+        <span>TEST MODE バッジを表示</span>
+      </label>
+
+      <button id="btn-apply" class="btn btn-primary">設定を適用して再構築</button>
+    </section>
+
+    <section class="panel">
+      <h2>イベント注入</h2>
+      <p class="note">
+        ボタンはモジュール内蔵の <code>testScenarios</code> から自動生成されます。
+        表示中の <code>^⇧キー</code> は、実機の MagicMirror で
+        <code>testMode: true</code> のときに使えるホットキーです。
+      </p>
+
+      <h3>地震情報 (551)</h3>
+      <div id="scenarios-quake"></div>
+
+      <h3>緊急地震速報 (556)</h3>
+      <div id="scenarios-eew"></div>
+
+      <h3>津波予報 (552)</h3>
+      <div id="scenarios-tsunami"></div>
+
+      <h3>操作</h3>
+      <button id="btn-bus-test" class="btn">
+        通知バス経由でテスト
+        <span class="btn-key">EARTHQUAKE_TEST</span>
+      </button>
+      <button id="btn-dismiss-fs" class="btn">全画面通知を閉じる</button>
+      <button id="btn-clear" class="btn btn-muted">すべてクリア</button>
+
+      <h3>実データ</h3>
+      <label class="check">
+        <input type="checkbox" id="live-toggle">
+        <span>P2P地震情報 API に接続（30秒毎ポーリング）</span>
+      </label>
+    </section>
+
+    <section class="panel hint">
+      <h2>確認ポイント</h2>
+      <ol>
+        <li>通知がないとき Topbar には<b>何も表示されない</b>（余白すら出ない）</li>
+        <li>イベント注入で<b>スライドイン + 点滅</b>して現れる</li>
+        <li>下部のバーが<b>残り時間</b>を示しながら減っていく</li>
+        <li>点滅時間を過ぎると点滅が止まり、静かに表示され続ける</li>
+        <li>表示時間を過ぎると<b>自動的に消えて何も残らない</b></li>
+        <li>「古い地震」は鮮度しきい値により<b>通知されない</b></li>
+        <li>表示時間を <code>10秒</code> 程度にすると自動消滅が素早く確認できます</li>
+        <li>震度5弱以上／EEW／大津波警報は<b>全画面通知</b>が重なって表示される</li>
+        <li>全画面通知にも<b>残り時間バー</b>と <b>TEST DATA</b> 表示が出る</li>
+        <li>list モードでも <code>fullscreenAlert</code> は動作する</li>
+      </ol>
+    </section>
+
+  </aside>
+</div>
+
+<!-- Load order matters:
+     1. harness.js  → defines the Module / Log shim (and defers init to DOMContentLoaded)
+     2. fixtures.js → sample P2P Quake payloads
+     3. the REAL module → calls Module.register() against the shim -->
+<script src="/preview/harness.js"></script>
+<script src="/preview/fixtures.js"></script>
+<script src="/MMM-EarthquakeMonitorJP.js"></script>
+<script>
+  // Decorative clock for the mirror simulation
+  (function tick() {
+    const now = new Date();
+    const p = (n) => String(n).padStart(2, "0");
+    document.getElementById("mirror-clock").textContent =
+      p(now.getHours()) + ":" + p(now.getMinutes());
+    document.getElementById("mirror-date").textContent =
+      now.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" });
+    setTimeout(tick, 1000);
+  })();
+</script>
+
+</body>
+</html>

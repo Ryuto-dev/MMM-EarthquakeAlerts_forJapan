@@ -1,0 +1,380 @@
+/* MMM-EarthquakeMonitorJP — Preview harness styling
+ * Only styles the surrounding preview chrome. The module itself is styled
+ * exclusively by the real MMM-EarthquakeMonitorJP.css.
+ */
+
+:root {
+  --bg: #10131a;
+  --panel: #181d27;
+  --panel-2: #1f2530;
+  --border: #2b3240;
+  --text: #e6e9ef;
+  --dim: #98a1b3;
+  --accent: #4aa3ff;
+  --warn: #ffb300;
+  --danger: #ff4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", -apple-system,
+               "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+/* ─── Layout ──────────────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 20px;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+h1 {
+  font-size: 1.5em;
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.tag {
+  display: inline-block;
+  background: var(--accent);
+  color: #06121f;
+  font-size: 0.6em;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.lead {
+  color: var(--dim);
+  margin: 0 0 20px;
+  font-size: 0.92em;
+}
+
+/* ─── Mirror simulation ───────────────────────────────────────── */
+.mirror {
+  position: relative;
+  background: #000000;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-height: 430px;
+  padding: 34px 16px 20px;
+  overflow: hidden;
+  /* MagicMirror's own base typography */
+  font-family: "Roboto Condensed", "Noto Sans JP", sans-serif;
+  color: #ffffff;
+}
+
+.mirror-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4a5364;
+}
+
+.region {
+  position: relative;
+  margin-bottom: 18px;
+}
+
+.region-label {
+  font-size: 10px;
+  color: #3d4657;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+/* Dashed outline makes "zero height when empty" visually obvious */
+.region-top-bar {
+  border: 1px dashed #2a3242;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-height: 44px;
+}
+
+.region-top-center {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.mirror-clock {
+  font-size: 3.4em;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.mirror-date {
+  color: #999999;
+  font-size: 0.95em;
+}
+
+.region-middle {
+  text-align: center;
+  padding: 28px 0;
+}
+
+.mirror-compliments {
+  color: #6d7688;
+  font-size: 0.95em;
+  font-style: italic;
+}
+
+/* ─── Module mount point ──────────────────────────────────────── */
+.module-mount {
+  transition: opacity 0.4s ease;
+}
+
+.module-mount.module-hidden {
+  opacity: 0;
+}
+
+/* ─── Fullscreen overlay containment ──────────────────────────────
+   In a real MagicMirror the overlay is appended to <body> and covers the
+   whole screen. In the preview we confine it to the mirror box so the
+   control panel stays reachable — `position: fixed` resolves against the
+   nearest ancestor that establishes a containing block, which `transform`
+   does. This only affects the preview page, never the shipped module.  */
+.mirror {
+  transform: translateZ(0);
+}
+
+.mirror .eq-fullscreen {
+  border-radius: 10px;
+}
+
+/* ─── Panels ──────────────────────────────────────────────────── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.panel h2 {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.panel h2:not(:first-child) { margin-top: 20px; }
+
+.panel h3 {
+  font-size: 0.78em;
+  color: var(--dim);
+  margin: 16px 0 6px;
+  font-weight: 600;
+}
+
+.panel h3:first-of-type { margin-top: 8px; }
+
+.side-col .panel:first-child { margin-top: 0; }
+
+/* ─── Form controls ──────────────────────────────────────────── */
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field > span {
+  display: block;
+  font-size: 0.86em;
+  margin-bottom: 5px;
+}
+
+.field small {
+  display: block;
+  color: var(--dim);
+  font-size: 0.76em;
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+.field input[type="range"] { width: 100%; }
+
+.field input[type="number"] {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 5px;
+  padding: 6px 9px;
+  font-size: 0.9em;
+}
+
+.radio, .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.86em;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.radio input, .check input {
+  margin-top: 4px;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: block;
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 0.86em;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn:hover {
+  background: #283040;
+  border-color: #3c465a;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #06121f;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 14px;
+}
+
+.btn-primary:hover { background: #63b0ff; border-color: #63b0ff; }
+
+.btn-warn { border-left: 3px solid var(--warn); }
+.btn-danger { border-left: 3px solid var(--danger); }
+.btn-muted { color: var(--dim); }
+
+/* Hotkey / meta hint inside a button */
+.btn-key {
+  float: right;
+  color: var(--dim);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.82em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0 5px;
+  border-radius: 3px;
+  margin-left: 8px;
+}
+
+.note {
+  color: var(--dim);
+  font-size: 0.78em;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+/* ─── State inspector ─────────────────────────────────────────── */
+.state-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84em;
+}
+
+.state-table th {
+  text-align: left;
+  color: var(--dim);
+  font-weight: 400;
+  padding: 3px 10px 3px 0;
+  white-space: nowrap;
+  width: 45%;
+}
+
+.state-table td {
+  padding: 3px 0;
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.state-notifs { margin-top: 12px; }
+
+.state-notif {
+  background: var(--panel-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  padding: 7px 10px;
+  margin-bottom: 6px;
+  font-size: 0.82em;
+}
+
+.state-notif .dim { color: var(--dim); }
+
+.blinking {
+  color: var(--warn);
+  font-weight: 700;
+  animation: preview-blink 1s ease-in-out infinite;
+}
+
+@keyframes preview-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ─── Log ─────────────────────────────────────────────────────── */
+.log {
+  background: #0b0e14;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  height: 200px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.log-line { white-space: pre-wrap; word-break: break-all; }
+.log-info { color: #9fb4cc; }
+.log-debug { color: #5d6878; }
+.log-warn { color: var(--warn); }
+.log-error { color: var(--danger); }
+
+/* ─── Hint list ───────────────────────────────────────────────── */
+.hint ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 0.83em;
+  color: var(--dim);
+}
+
+.hint li { margin-bottom: 5px; }
+.hint b { color: var(--text); }
