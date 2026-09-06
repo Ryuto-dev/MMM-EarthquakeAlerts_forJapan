@@ -7,6 +7,48 @@
   max-width: 450px;
 }
 
+/* ─── Bounded-height text utilities ───────────────────────────────
+   Some API payloads carry unusually long content — e.g. the "スンダ海峡"
+   (Sunda Strait) distant-earthquake / volcanic-eruption bulletins ship a
+   500+ character freeFormComment, and a widespread quake/alert can list
+   dozens of observation points or warning areas. The JS side already
+   truncates/caps that data before it reaches the DOM, but these utility
+   classes are a CSS-level safety net: no matter how long an unexpected
+   payload turns out to be, a single entry can never grow taller than the
+   fixed number of lines below, so `maxQuakes` entries always keep a
+   consistent, predictable total height. */
+.eq-clamp-1,
+.eq-clamp-2,
+.eq-clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+.eq-clamp-1 { -webkit-line-clamp: 1; max-height: 1.6em; }
+.eq-clamp-2 { -webkit-line-clamp: 2; max-height: 3.2em; }
+.eq-clamp-3 { -webkit-line-clamp: 3; max-height: 4.8em; }
+
+/* Fallback for engines without line-clamp support (rare in Electron/Chromium,
+   but kept for safety): still cap the box height and hide the overflow. */
+@supports not (-webkit-line-clamp: 2) {
+  .eq-clamp-1, .eq-clamp-2, .eq-clamp-3 {
+    display: block;
+    white-space: normal;
+  }
+}
+
+/* Multi-line area lists (e.g. tsunami areas) that render one <div> per
+   line rather than a single text block: cap by pixel height + scroll
+   instead of line-clamp, so a handful of extra items scroll internally
+   instead of pushing the whole entry taller. */
+.eq-scroll-cap {
+  max-height: 5.6em;
+  overflow-y: auto;
+}
+
 /* ─── Loading ─────────────────────────────────────────────────── */
 .eq-loading {
   padding: 5px 0;
@@ -115,6 +157,11 @@
 
 .eq-tsunami-area {
   color: #dddddd;
+}
+
+.eq-tsunami-area.eq-more {
+  color: #aaaaaa;
+  font-style: italic;
 }
 
 /* ─── Earthquake Information ──────────────────────────────────── */
