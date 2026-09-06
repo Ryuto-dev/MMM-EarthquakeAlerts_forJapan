@@ -775,6 +775,110 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   }
 
   // ─────────────────────────────────────────────────────────────────
+  section("17. Long payloads never stretch a single entry's height");
+  // Regression guard for the real-world "スンダ海峡" (Sunda Strait)
+  // distant-earthquake bulletins, which ship a 500+ character
+  // freeFormComment, and for widespread quakes that report dozens of
+  // observation points. Every entry must stay bounded so `maxQuakes`
+  // rows keep a predictable, consistent total height.
+  {
+    const LONG_COMMENT =
+      "令和８年９月５日０２時５０分頃（日本時間）にクラカタウ火山で大規模な噴火が発生しました。" +
+      "\n現在、海外および国内の観測点で有意な潮位変化は観測されていません。" +
+      "この噴火に伴って津波が発生して日本へ到達する場合、到達予想時刻は早いところで、" +
+      "５日０６時００分頃です。予想される津波の最大波の高さは不明です。" +
+      "ただし、到達予想時刻は、日本のなかで最も早く津波が到達する時刻です。" +
+      "場所によっては、この時刻よりもかなり遅れて津波が襲ってくることがあります。" +
+      "今後の情報に注意してください。次の遠地地震に関する情報は、後日発表の予定です。";
+    check("fixture comment is indeed very long (>200 chars)", LONG_COMMENT.length > 200,
+      "len=" + LONG_COMMENT.length);
+
+    const manyPoints = [];
+    for (let i = 0; i < 34; i++) {
+      manyPoints.push({ addr: "観測地点" + i, isArea: false, pref: "―", scale: i < 31 ? 10 : 20 });
+    }
+
+    const m = instantiate({ displayMode: "list", showPointDetails: true });
+    const quake = quakeEvent({ scale: 10, place: "スンダ海峡" });
+    quake.points = manyPoints;
+    quake.comments = { freeFormComment: LONG_COMMENT };
+
+    m.socketNotificationReceived("INITIAL_DATA", [quake]);
+    const entry = m.getDom().children[0];
+
+    const comment = entry.find((c) => c.classList.contains("eq-quake-comment"));
+    check("comment node rendered", !!comment);
+    check("rendered comment text is truncated well below the raw length",
+      !!comment && comment.textContent.length < 200,
+      comment ? "len=" + comment.textContent.length : "missing");
+    check("comment carries eq-clamp CSS safety class",
+      !!comment && comment.classList.contains("eq-clamp-2"));
+    check("full text preserved via title attribute for hover",
+      !!comment && comment.title === LONG_COMMENT,
+      comment ? "title len=" + (comment.title || "").length : "missing");
+
+    const pointsDiv = entry.find((c) => c.classList.contains("eq-quake-points"));
+    check("points node rendered", !!pointsDiv);
+    check("points node carries eq-clamp CSS safety class",
+      !!pointsDiv && pointsDiv.classList.contains("eq-clamp-3"));
+    check("34 points are summarized, not all rendered inline",
+      !!pointsDiv && pointsDiv.text.includes("ほか"),
+      pointsDiv ? pointsDiv.text : "missing");
+
+    // A quake with short/no comment and few points must not carry the
+    // truncation markers at all — the fix must be a no-op for normal data.
+    const m2 = instantiate({ displayMode: "list", showPointDetails: true });
+    const shortQuake = quakeEvent({ scale: 30, place: "宮古島近海" });
+    shortQuake.points = [{ addr: "沖縄県宮古島市", isArea: false, pref: "沖縄県", scale: 30 }];
+    m2.socketNotificationReceived("INITIAL_DATA", [shortQuake]);
+    const entry2 = m2.getDom().children[0];
+    const pointsDiv2 = entry2.find((c) => c.classList.contains("eq-quake-points"));
+    check("short point list is not summarized",
+      !!pointsDiv2 && !pointsDiv2.text.includes("ほか"),
+      pointsDiv2 ? pointsDiv2.text : "missing");
+
+    // EEW with a large number of warning areas is summarized the same way.
+    const eew = eewEvent();
+    eew.areas = [];
+    for (let i = 0; i < 20; i++) {
+      eew.areas.push({ pref: "北海道", name: "地域" + i, scaleFrom: 40, scaleTo: 45 });
+    }
+    const m3 = instantiate({ displayMode: "list" });
+    m3.loaded = true;
+    m3.connectionStatus = "connected";
+    m3.socketNotificationReceived("EEW_DATA", eew);
+    const eewAreas = m3.getDom().find((c) => c.classList.contains("eq-eew-areas"));
+    check("EEW with many areas is summarized",
+      !!eewAreas && eewAreas.textContent.includes("ほか"),
+      eewAreas ? eewAreas.textContent : "missing");
+    check("EEW areas node carries scroll/clamp safety class",
+      !!eewAreas && eewAreas.classList.contains("eq-clamp-2"));
+    check("full EEW area list preserved via title attribute",
+      !!eewAreas && eewAreas.title.split("、").length === 20,
+      eewAreas ? eewAreas.title : "missing");
+
+    // Tsunami warning with many coastal areas is capped, with an overflow line.
+    const tsunami = tsunamiEvent({ grade: "Warning" });
+    tsunami.areas = [];
+    for (let i = 0; i < 15; i++) {
+      tsunami.areas.push({
+        grade: "Warning", name: "沿岸" + i, immediate: false,
+        maxHeight: { description: "３ｍ", value: 3 },
+      });
+    }
+    const m4 = instantiate({ displayMode: "list" });
+    m4.loaded = true;
+    m4.connectionStatus = "connected";
+    m4.socketNotificationReceived("TSUNAMI_DATA", tsunami);
+    const tsuAreas = m4.getDom().find((c) => c.classList.contains("eq-tsunami-areas"));
+    check("tsunami areas node carries scroll-cap safety class",
+      !!tsuAreas && tsuAreas.classList.contains("eq-scroll-cap"));
+    check("tsunami with many areas shows an overflow summary line",
+      !!tsuAreas && tsuAreas.text.includes("ほか"),
+      tsuAreas ? tsuAreas.text : "missing");
+  }
+
+  // ─────────────────────────────────────────────────────────────────
   console.log(
     "\n\x1b[1m" + "─".repeat(56) + "\x1b[0m\n" +
     "\x1b[1mResult:\x1b[0m \x1b[32m" + passed + " passed\x1b[0m" +

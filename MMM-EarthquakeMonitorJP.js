@@ -34,6 +34,17 @@ Module.register("MMM-EarthquakeMonitorJP", {
     showDepth: true,            // Show depth
     showTsunamiStatus: true,    // Show domestic tsunami status
 
+    // ─── Entry size caps ────────────────────────────────────────────
+    // The P2P Quake API can return very long payloads for some events
+    // (e.g. distant-earthquake / volcanic-eruption bulletins routed through
+    // the "Sunda Strait" style entries carry a multi-paragraph freeFormComment
+    // of 500+ characters, and major alerts can list dozens of areas/points).
+    // These caps keep every single entry's height bounded and consistent,
+    // no matter how long the incoming data is.
+    maxCommentLength: 160,      // Max characters kept from a free-form comment
+    maxAreaItems: 6,            // Max EEW/tsunami area names shown before "ほか"
+    maxPointAddresses: 8,       // Max observation-point addresses per intensity tier
+
     // Style
     compactMode: false,         // Use compact single-line display
     colorizeByScale: true,      // Colorize intensity display
@@ -1001,15 +1012,18 @@ Module.register("MMM-EarthquakeMonitorJP", {
       container.appendChild(info);
     }
 
-    // EEW warning areas
+    // EEW warning areas — capped so a widespread warning (dozens of areas)
+    // cannot stretch this entry taller than its neighbours.
     if (eew.areas && eew.areas.length > 0) {
       const areasDiv = document.createElement("div");
-      areasDiv.className = "eq-eew-areas small";
+      areasDiv.className = "eq-eew-areas small eq-clamp-2";
       const areaNames = eew.areas.map((a) => {
         const scaleText = this._scaleToText(a.scaleFrom);
         return a.name + (scaleText ? "(" + scaleText + ")" : "");
       });
-      areasDiv.textContent = areaNames.join("、");
+      const joined = this._joinWithOverflow(areaNames, this.config.maxAreaItems, "、");
+      areasDiv.textContent = joined;
+      areasDiv.title = areaNames.join("、");
       container.appendChild(areasDiv);
     }
 
@@ -1051,8 +1065,15 @@ Module.register("MMM-EarthquakeMonitorJP", {
 
     if (tsunami.areas && tsunami.areas.length > 0) {
       const areasDiv = document.createElement("div");
-      areasDiv.className = "eq-tsunami-areas small";
-      tsunami.areas.forEach((area) => {
+      areasDiv.className = "eq-tsunami-areas small eq-scroll-cap";
+
+      // A widespread warning can list dozens of coastal areas — cap how
+      // many individual lines are rendered and summarize the rest, so
+      // this entry's height stays consistent with the others.
+      const maxAreas = Math.max(1, this.config.maxAreaItems);
+      const visible = tsunami.areas.slice(0, maxAreas);
+
+      visible.forEach((area) => {
         const areaItem = document.createElement("div");
         areaItem.className = "eq-tsunami-area";
 
@@ -1069,6 +1090,14 @@ Module.register("MMM-EarthquakeMonitorJP", {
         areaItem.textContent = text;
         areasDiv.appendChild(areaItem);
       });
+
+      if (tsunami.areas.length > maxAreas) {
+        const more = document.createElement("div");
+        more.className = "eq-tsunami-area eq-more";
+        more.textContent = "ほか" + (tsunami.areas.length - maxAreas) + "件";
+        areasDiv.appendChild(more);
+      }
+
       container.appendChild(areasDiv);
     }
 
@@ -1138,10 +1167,13 @@ Module.register("MMM-EarthquakeMonitorJP", {
     topRow.appendChild(infoBlock);
     container.appendChild(topRow);
 
-    // Observation points (optional)
+    // Observation points (optional) — a major earthquake can report
+    // dozens of points per intensity tier, so each tier's address list is
+    // capped (with a "ほかN件" summary) to keep this entry's height in
+    // line with entries that have few or no points at all.
     if (this.config.showPointDetails && quake.points && quake.points.length > 0) {
       const pointsDiv = document.createElement("div");
-      pointsDiv.className = "eq-quake-points xsmall dimmed";
+      pointsDiv.className = "eq-quake-points xsmall dimmed eq-clamp-3";
 
       // Group by scale descending
       const grouped = {};
@@ -1156,23 +1188,72 @@ Module.register("MMM-EarthquakeMonitorJP", {
         .forEach((scale) => {
           const line = document.createElement("div");
           const scaleText = this._scaleToText(parseInt(scale, 10));
-          const addrs = grouped[scale].map((p) => (p.isArea ? p.addr : p.addr)).join("、");
-          line.textContent = "【" + scaleText + "】" + addrs;
+          const addrs = grouped[scale].map((p) => p.addr);
+          const joined = this._joinWithOverflow(addrs, this.config.maxPointAddresses, "、");
+          line.textContent = "【" + scaleText + "】" + joined;
+          line.title = "【" + scaleText + "】" + addrs.join("、");
           pointsDiv.appendChild(line);
         });
 
       container.appendChild(pointsDiv);
     }
 
-    // Free-form comment
+    // Free-form comment — some bulletins (e.g. distant-earthquake /
+    // volcanic-eruption notices such as the "スンダ海峡" entries) carry
+    // 500+ characters of caveats across several paragraphs. Truncate to a
+    // bounded length so this single entry cannot stretch far taller than
+    // the other entries in the list; the full text stays available via
+    // the `title` attribute on hover.
     if (quake.comments && quake.comments.freeFormComment) {
+      const fullComment = quake.comments.freeFormComment;
       const comment = document.createElement("div");
-      comment.className = "eq-quake-comment xsmall dimmed";
-      comment.textContent = quake.comments.freeFormComment;
+      comment.className = "eq-quake-comment xsmall dimmed eq-clamp-2";
+      comment.textContent = this._truncateText(fullComment, this.config.maxCommentLength);
+      comment.title = fullComment;
       container.appendChild(comment);
     }
 
     return container;
+  },
+
+  /**
+   * Clamp free-form text to a bounded number of characters so a single
+   * unusually long payload (e.g. a multi-paragraph volcanic/distant-quake
+   * bulletin) cannot stretch one entry's height past its neighbours.
+   * Cuts at the first newline/sentence break when possible so the
+   * truncated text still reads naturally; the full text is always
+   * preserved by the caller via the `title` attribute for hover access.
+   */
+  _truncateText(text, maxLen) {
+    if (!text) return "";
+    const limit = Math.max(1, maxLen || 160);
+
+    // Prefer breaking at the first newline (bulletins often front-load the
+    // most relevant sentence before a wall of caveats/footnotes).
+    const newlineIdx = text.indexOf("\n");
+    let candidate = newlineIdx > -1 && newlineIdx < limit
+      ? text.slice(0, newlineIdx)
+      : text;
+
+    if (candidate.length <= limit) {
+      return candidate === text ? candidate : candidate + " …";
+    }
+
+    return candidate.slice(0, limit).trim() + " …";
+  },
+
+  /**
+   * Join a list of short labels (area names, observation points, …) up to
+   * a max count, summarizing the remainder as "ほかN件" instead of
+   * rendering every single one — the list can otherwise contain dozens of
+   * entries for a widespread alert.
+   */
+  _joinWithOverflow(items, maxItems, separator) {
+    const sep = separator || "、";
+    const max = Math.max(1, maxItems || 6);
+    if (items.length <= max) return items.join(sep);
+    const shown = items.slice(0, max).join(sep);
+    return shown + sep + "ほか" + (items.length - max) + "件";
   },
 
   // ─── Helper: Scale to Text ───────────────────────────────────────
